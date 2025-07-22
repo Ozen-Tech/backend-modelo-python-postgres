@@ -1,0 +1,29 @@
+# requirements.txt
+
+# --- Core Framework ---
+fastapi
+uvicorn[standard]
+pydantic-settings
+python-multipart
+email-validator
+
+# --- Banco de Dados e ORM ---
+SQLAlchemy
+psycopg2-binary
+alembic
+
+# --- Segurança e Autenticação ---
+passlib[bcrypt]
+python-jose[cryptography]
+
+# --- Tarefas Assíncronas (para Fase 3) ---
+celery
+redis
+
+# --- Notificações (para Fase 3) ---
+firebase-admin
+
+# --- Ferramentas de Utilidade (para futuras fases) ---
+typer
+pandas
+openpyxl

@@ -1,26 +1,23 @@
-version: '3.8'
-
 services:
-  # Serviço da API FastAPI
-  higiplas_api:
+  bacelar_api:
     build:
-      context: ./backend  # 1. CONTEXTO: Diz ao Docker para "entrar" nesta pasta primeiro.
-      dockerfile: Dockerfile     # 2. DOCKERFILE: O nome do arquivo a ser usado.
+      context: .
+      dockerfile: Dockerfile
+    command: /code/start.sh
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/app:/code/app # Mapeia o código para desenvolvimento
-    env_file:
-      - .env
+      - ./app:/code/app
+      - ./firebase-credentials.json:/code/firebase-credentials.json
+    env_file: .env
     depends_on:
-      - higiplas_postgres
+      - bacelar_postgres
+      - bacelar_redis
     networks:
-      - higiplas_network
+      - bacelar_network
 
-
-  # Serviço do Banco de Dados PostgreSQL
-  higiplas_postgres:
-    image: postgres:15-alpine
+  bacelar_postgres:
+    image: postgres:15
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
@@ -30,11 +27,16 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - higiplas_network
+      - bacelar_network
 
+  bacelar_redis:
+    image: redis:6-alpine
+    networks:
+      - bacelar_network
+    
 volumes:
   postgres_data:
 
 networks:
-  higiplas_network:
+  bacelar_network:
     driver: bridge

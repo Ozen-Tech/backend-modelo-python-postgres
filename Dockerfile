@@ -1,24 +1,23 @@
-# /backend/Dockerfile
+# Dockerfile
 
-# 1. Use uma imagem Python oficial e leve
 FROM python:3.11-slim
 
-# 2. Defina o diretório de trabalho dentro do container
+# Define o diretório de trabalho. A partir daqui, tudo acontece em /code
 WORKDIR /code
 
-# 3. Copie o arquivo de dependências PRIMEIRO
-# Correção: Copie a partir da raiz do contexto de build (que é a pasta 'backend')
-COPY requirements.txt /code/requirements.txt
+# ---- A MUDANÇA ESSENCIAL ESTÁ AQUI ----
+# Adiciona o diretório de trabalho ao PYTHONPATH.
+# Isso garante que importações como 'from app.core...' funcionem
+# em qualquer script executado dentro do container (alembic, uvicorn, etc).
+ENV PYTHONPATH "${PYTHONPATH}:/code"
+# ----------------------------------------
 
-# 4. Instale as dependências
-RUN pip install --timeout=100 --no-cache-dir --upgrade -r /code/requirements.txt
-# 5. Copie o resto do código da sua aplicação
-# Correção: Copie tudo da raiz do contexto (a pasta 'backend') para o diretório de trabalho
+# Copia e instala as dependências
+COPY requirements.txt /code/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+
+# Copia o resto do código da sua aplicação
 COPY . /code
 
-# 6. Exponha a porta que o Uvicorn usará
+# Expõe a porta que o Uvicorn usará
 EXPOSE 8000
-
-# 7. Comando para iniciar a aplicação
-#    --host 0.0.0.0 é CRUCIAL para que a API seja acessível de fora do container.
-#CMD ["/code/start.sh"]

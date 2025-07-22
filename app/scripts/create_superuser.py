@@ -1,4 +1,11 @@
+# app/scripts/create_superuser.py
+
 from sqlalchemy.orm import Session
+# --- Início da Correção ---
+# Importe todos os seus modelos aqui para garantir que o SQLAlchemy os conheça
+# antes de qualquer operação de banco de dados ser executada.
+from app.db import base 
+# --- Fim da Correção ---
 from app.core.config import settings
 from app.services import user_service
 from app.schemas.user import UserCreate, UserProfile

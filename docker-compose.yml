@@ -9,6 +9,7 @@ services:
     volumes:
       - ./app:/code/app
       - ./firebase-credentials.json:/code/firebase-credentials.json
+      - ./alembic:/code/alembic
     env_file: .env
     depends_on:
       - bacelar_postgres

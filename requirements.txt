@@ -6,7 +6,7 @@ uvicorn[standard]
 pydantic-settings
 python-multipart
 email-validator
-
+gunicorn
 # --- Banco de Dados e ORM ---
 SQLAlchemy
 psycopg2-binary

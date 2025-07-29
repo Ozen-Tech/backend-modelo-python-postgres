@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str
     # ---------------------------
 
+    FRONTEND_URL: str
+
     FIREBASE_CREDENTIALS_PATH: str | None = None
 
     # A model_config do Pydantic V2

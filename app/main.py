@@ -4,6 +4,7 @@ from app.api.endpoints import auth, users, deadlines, dashboard, notifications
 from app.db.base import Base 
 from app.db.connection import engine
 from app.models.user.model import User 
+from app.core.config import settings
 
 # Isso cria as tabelas, mas Alembic é o preferido. Deixe comentado ou remova
 # se estiver usando Alembic religiosamente.
@@ -14,9 +15,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
+origins = [
+    settings.FRONTEND_URL,
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Mude para origens específicas em produção
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

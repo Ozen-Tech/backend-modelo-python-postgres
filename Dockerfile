@@ -1,23 +1,22 @@
 # Dockerfile
-
 FROM python:3.11-slim
-
-# Define o diretório de trabalho. A partir daqui, tudo acontece em /code
 WORKDIR /code
 
-# ---- A MUDANÇA ESSENCIAL ESTÁ AQUI ----
-# Adiciona o diretório de trabalho ao PYTHONPATH.
-# Isso garante que importações como 'from app.core...' funcionem
-# em qualquer script executado dentro do container (alembic, uvicorn, etc).
 ENV PYTHONPATH "${PYTHONPATH}:/code"
-# ----------------------------------------
 
-# Copia e instala as dependências
 COPY requirements.txt /code/requirements.txt
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-# Copia o resto do código da sua aplicação
 COPY . /code
 
-# Expõe a porta que o Uvicorn usará
+# --- CORREÇÃO PARA O DEPLOY ---
+# Adiciona permissão de execução aos nossos scripts de inicialização
+# Isso garante que eles possam ser executados no Render, independentemente do Git.
+RUN chmod +x /code/start.sh
+RUN chmod +x /code/start-prod.sh
+# --- FIM DA CORREÇÃO ---
+
 EXPOSE 8000
+
+# O comando padrão para o container será o de produção.
+CMD ["/code/start-prod.sh"]

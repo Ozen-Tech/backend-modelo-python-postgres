@@ -5,7 +5,8 @@ from .db.connection import SessionLocal
 from .services import deadline_service
 from .schemas.deadline import DeadlineClassification, DeadlineStatus
 from .services.notification_service import send_push_notification
-from .models.notification.model import Notification # Importe o modelo
+from .models.notification.model import Notification
+from .models.deadline.model import Deadline 
 
 @celery_app.task
 def classify_deadline(deadline_id: str):
@@ -36,20 +37,17 @@ def classify_deadline(deadline_id: str):
     finally:
         db.close()
 
-# --- NOVA TAREFA AGENDADA ---
 @celery_app.task
 def reclassify_all_deadlines_task():
     print("[CELERY BEAT] Iniciando tarefa diária: Reclassificar todos os prazos.")
     db = SessionLocal()
     try:
-        # Busca todos os prazos que ainda não foram concluídos ou cancelados
         active_deadlines = db.query(Deadline).filter(
             Deadline.status.notin_([DeadlineStatus.CONCLUIDO, DeadlineStatus.CANCELADO])
         ).all()
         
         print(f"[CELERY BEAT] Encontrados {len(active_deadlines)} prazos ativos para reclassificar.")
         for deadline in active_deadlines:
-            # Chama a tarefa de classificação para cada um
             classify_deadline.delay(str(deadline.id))
     finally:
         db.close()

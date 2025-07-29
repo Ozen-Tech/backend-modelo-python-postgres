@@ -5,3 +5,4 @@ from app.db.base_class import Base
 from app.models.user.model import User
 from app.models.deadline.model import Deadline
 from app.models.history.model import DeadlineHistory
+from app.models.notification.model import Notification

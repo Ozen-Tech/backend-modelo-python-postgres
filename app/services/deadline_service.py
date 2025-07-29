@@ -4,13 +4,32 @@ from app.models.deadline.model import Deadline
 from app.models.history.model import DeadlineHistory
 from app.schemas.deadline import DeadlineCreate, DeadlineUpdate
 
+
 def get_deadline_by_id(db: Session, deadline_id: uuid.UUID) -> Deadline | None:
     return db.query(Deadline).filter(Deadline.id == deadline_id).first()
 
-def get_all_deadlines(db: Session, skip: int = 0, limit: int = 100) -> list[Deadline]:
-    return db.query(Deadline).order_by(Deadline.due_date.asc()).offset(skip).limit(limit).all()
+def get_all_deadlines(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    search: str | None = None,
+    type: str | None = None,
+    responsible_id: uuid.UUID | None = None
+) -> list[Deadline]:
+    query = db.query(Deadline)
+    if search:
+        query = query.filter(Deadline.process_number.ilike(f"%{search}%"))
+    if type:
+        query = query.filter(Deadline.type == type)
+    if responsible_id:
+        query = query.filter(Deadline.responsible_user_id == responsible_id)
+        
+    return query.order_by(Deadline.due_date.asc()).offset(skip).limit(limit).all()
 
 def create_deadline(db: Session, *, deadline_in: DeadlineCreate, user_id: uuid.UUID) -> Deadline:
+
+    from app.tasks import classify_deadline
+
     # Cria o objeto do prazo
     db_deadline = Deadline(**deadline_in.model_dump())
     db.add(db_deadline)
@@ -27,11 +46,19 @@ def create_deadline(db: Session, *, deadline_in: DeadlineCreate, user_id: uuid.U
     
     db.commit()
     db.refresh(db_deadline)
+
+    # --- 2. DISPARE A TAREFA EM SEGUNDO PLANO ---
+    # '.delay()' é o comando que envia a tarefa para a fila do Celery.
+    # Passamos apenas o ID, que é um dado simples e serializável.
+    classify_deadline.delay(str(db_deadline.id))
+
     return db_deadline
 
 def update_deadline(
     db: Session, *, db_obj: Deadline, obj_in: DeadlineUpdate, user_id: uuid.UUID
 ) -> Deadline:
+    from app.tasks import classify_deadline
+
     update_data = obj_in.model_dump(exclude_unset=True)
     history_details = {}
     
@@ -55,6 +82,9 @@ def update_deadline(
     db.add(db_obj)
     db.commit()
     db.refresh(db_obj)
+
+    classify_deadline.delay(str(db_obj.id))
+
     return db_obj
 
 def delete_deadline(db: Session, *, db_obj: Deadline):

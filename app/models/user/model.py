@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, DateTime, Enum as SQLAlchemyEnum
+from sqlalchemy import Column, String, Boolean, DateTime, Enum as SQLAlchemyEnum, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.db.base_class import Base
@@ -17,6 +17,9 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     profile = Column(SQLAlchemyEnum(UserProfile), nullable=False, default=UserProfile.ADVOGADO)
     is_active = Column(Boolean(), default=True)
+    phone = Column(String(20), nullable=True)
+    notification_preferences = Column(JSON, nullable=True)
+    fcm_token = Column(String(255), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

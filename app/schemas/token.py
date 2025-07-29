@@ -7,3 +7,6 @@ class Token(BaseModel):
 class TokenPayload(BaseModel):
     sub: str | None = None
     profile: str | None = None
+
+class FCMTokenPayload(BaseModel):
+    fcm_token: str

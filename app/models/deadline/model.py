@@ -12,11 +12,14 @@ class Deadline(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     process_number = Column(String(100), index=True)
     parties = Column(Text, nullable=True) # Partes envolvidas no processo
+    type = Column(String(100), index=True, nullable=True)
+
     task_description = Column(Text, nullable=False)
     due_date = Column(DateTime(timezone=True), nullable=False, index=True)
     
     status = Column(SQLAlchemyEnum(DeadlineStatus), nullable=False, default=DeadlineStatus.PENDENTE, index=True)
     classification = Column(SQLAlchemyEnum(DeadlineClassification), nullable=False, default=DeadlineClassification.NORMAL)
+    
     
     responsible_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     responsible = relationship("User", back_populates="deadlines")

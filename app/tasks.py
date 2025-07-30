@@ -1,45 +1,68 @@
 # app/tasks.py
-from datetime import datetime, timedelta
-from .worker import celery_app
-from .db.connection import SessionLocal
-from .services import deadline_service
-from .schemas.deadline import DeadlineClassification, DeadlineStatus
-from .services.notification_service import send_push_notification
-from .models.notification.model import Notification
-from .models.deadline.model import Deadline 
+from datetime import datetime, timedelta, timezone
+from app.worker import celery_app
+from app.db.connection import SessionLocal
+from app.services import deadline_service
+from app.schemas.deadline import DeadlineClassification, DeadlineStatus
+from app.services.notification_service import send_push_notification
+from app.models.notification.model import Notification
+from app.models.deadline.model import Deadline 
 
 @celery_app.task
 def classify_deadline(deadline_id: str):
-    print(f"[CELERY TASK] Classificando prazo: {deadline_id}")
+    """
+    Busca um prazo no banco, calcula sua classificação e envia notificação se necessário.
+    """
+    print(f"[CELERY TASK] Iniciando classificação para o prazo: {deadline_id}")
     db = SessionLocal()
-    # ... (lógica existente para buscar prazo, calcular tempo, etc.)
     try:
         deadline = deadline_service.get_deadline_by_id(db, deadline_id=deadline_id)
-        # ...
+        if not deadline or deadline.status in [DeadlineStatus.CONCLUIDO, DeadlineStatus.CANCELADO]:
+            print(f"[CELERY TASK] Prazo {deadline_id} não encontrado ou inativo. Abortando.")
+            return
+
+        now = datetime.now(timezone.utc)
+        time_left = deadline.due_date - now
+
+        new_classification = DeadlineClassification.NORMAL
+        if time_left <= timedelta(days=2):
+            new_classification = DeadlineClassification.FATAL
+        elif time_left <= timedelta(days=7):
+            new_classification = DeadlineClassification.CRITICO
+        
+        # Se a classificação mudou, atualiza e notifica
         if deadline.classification != new_classification:
+            print(f"[CELERY TASK] Classificação do prazo {deadline_id} mudou para {new_classification.value}.")
             deadline.classification = new_classification
             db.commit()
             db.refresh(deadline)
             
-            if deadline.responsible and (new_classification in [DeadlineClassification.CRITICO, DeadlineClassification.FATAL]):
-                if deadline.responsible.fcm_token and deadline.responsible.notification_preferences.get('push', False):
+            # Lógica para enviar notificação
+            responsible_user = deadline.responsible
+            if responsible_user and (new_classification in [DeadlineClassification.CRITICO, DeadlineClassification.FATAL]):
+                # Verifica se o usuário tem token e se ativou notificações push
+                if responsible_user.fcm_token and responsible_user.notification_preferences.get('push', True):
                     title = f"Alerta de Prazo: {new_classification.value.upper()}"
                     body = f"O prazo para '{deadline.task_description[:50]}...' está se aproximando."
                     
-                    # Salva a notificação no banco de dados ANTES de enviar
-                    notification = Notification(user_id=deadline.responsible.id, title=title, body=body, related_deadline_id=deadline.id)
+                    # Salva a notificação no nosso banco
+                    notification = Notification(user_id=responsible_user.id, title=title, body=body, related_deadline_id=deadline.id)
                     db.add(notification)
                     db.commit()
                     
-                    # Envia a notificação push
+                    # Envia para o Firebase
                     data = {"deadlineId": str(deadline.id), "notificationId": str(notification.id)}
-                    send_push_notification(deadline.responsible.fcm_token, title, body, data)
+                    send_push_notification(responsible_user.fcm_token, title, body, data)
     finally:
         db.close()
 
 @celery_app.task
 def reclassify_all_deadlines_task():
-    print("[CELERY BEAT] Iniciando tarefa diária: Reclassificar todos os prazos.")
+    """
+    Tarefa agendada para buscar todos os prazos ativos e enfileirar uma
+    tarefa de reclassificação para cada um.
+    """
+    print(f"[CELERY BEAT] {datetime.now()}: Iniciando tarefa diária: Reclassificar todos os prazos.")
     db = SessionLocal()
     try:
         active_deadlines = db.query(Deadline).filter(

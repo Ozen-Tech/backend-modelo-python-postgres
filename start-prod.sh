@@ -1,10 +1,12 @@
 #!/bin/bash
+
+# Faz o script parar imediatamente se qualquer comando falhar
 set -e
 
-# No Render, as migrações são melhores como um Build Command
-# Mas se não for possível, esta é a segunda melhor opção.
-echo "==> Aplicando migrações (produção)..."
+# 1. Aplica as migrações do banco de dados antes de iniciar
+echo "==> [START-PROD] Executando migrações do banco de dados..."
 alembic upgrade head
 
-echo "==> Iniciando Gunicorn..."
-gunicorn -c /code/gunicorn_conf.py app.main:app
+# 2. Inicia o servidor Gunicorn para produção
+echo "==> [START-PROD] Iniciando o servidor Gunicorn na porta 8000..."
+gunicorn -c gunicorn_conf.py app.main:app

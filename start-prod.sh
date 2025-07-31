@@ -1,7 +1,17 @@
+
+
 #!/bin/bash
+
+# 1. Parar o script se qualquer comando falhar
 set -e
-echo "🙏 Aplicando migrações do Alembic..."
+
+# 2. Aplicar as migrações do banco de dados
+# O comando `alembic upgrade head` irá conectar ao seu banco de produção
+# (usando a DATABASE_URL do ambiente) e aplicar quaisquer migrações pendentes.
+echo "==> Executando migrações do banco de dados..."
 alembic upgrade head
-echo "👤 Criando superusuário (se não existir)..."
-echo "🔥 Iniciando a API em modo de produção com Gunicorn..."
-gunicorn -c /code/gunicorn_conf.py app.main:app
+
+# 3. Iniciar o servidor de aplicação Gunicorn
+# Este comando iniciará a API para receber requisições da web.
+echo "==> Iniciando o servidor Gunicorn..."
+gunicorn -c gunicorn_conf.py app.main:app

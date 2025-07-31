@@ -1,7 +1,10 @@
-# manage.py
+# manage.py (VERSÃO FINAL E CORRIGIDA)
 import typer
 import getpass
 from sqlalchemy.orm import Session
+# O 'click.Choice' vem diretamente do pacote 'click', não do 'typer'
+import click 
+
 from app.db.connection import SessionLocal
 from app.services import user_service
 from app.schemas.user import UserCreate, UserProfile
@@ -36,10 +39,10 @@ def create_user():
             print("\n❌ Erro: As senhas não conferem.")
             raise typer.Abort()
 
-        # Mostra as opções de perfil a partir do Enum
+        # Agora, a classe 'Choice' é usada corretamente, vinda do 'click'
         perfil_str = typer.prompt(
             "Perfil do usuário", 
-            type=typer.Choice([p.value for p in UserProfile]),
+            type=click.Choice([p.value for p in UserProfile]),
             default=UserProfile.ADVOGADO.value,
             show_choices=True
         )
@@ -62,5 +65,7 @@ def create_user():
     finally:
         db.close()
 
+# Se você quiser rodar como um único comando, o 'if' name' main deve chamar o comando específico
+# Mas vamos manter o 'typer' gerenciando isso
 if __name__ == "__main__":
     cli_app()

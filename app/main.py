@@ -31,8 +31,7 @@ api_router.include_router(notifications.router, prefix="/notifications", tags=["
 app.include_router(api_router)
 
 origins = [
-    "http://localhost:5173",
-    settings.FRONTEND_URL,
+    "*",
 ]
 
 app.add_middleware(

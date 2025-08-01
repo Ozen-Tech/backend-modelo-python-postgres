@@ -1,0 +1,35 @@
+# render.yaml
+services:
+  # Configuração para o serviço da API principal
+  - type: web
+    name: bacelar-api # O nome do seu serviço
+    env: docker
+    autoDeploy: true
+    # ---- INÍCIO DAS CORREÇÕES ---
+    # Define explicitamente a origem do repositório
+    repo: https://github.com/Ozen-Tech/bacelar-system # Verifique se esta é a URL correta
+    # Define os comandos de deploy
+    healthCheckPath: /
+    preDeployCommand: "alembic upgrade head"
+    # A configuração do startCommand é ignorada quando se usa `dockerCommand` no yaml.
+    # Mas para sermos explícitos, o comando de inicialização já está no Dockerfile.
+    # --- FIM DAS CORREÇÕES ---
+    envVars:
+      # Puxa as variáveis de ambiente diretamente do grupo que criaremos
+      - fromGroup: bacelar-env
+      # Variável específica do banco de dados (o Render conecta automaticamente)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bacelar-postgres # Verifique o nome do seu serviço de banco de dados
+          property: connectionString
+
+  # Configuração para o banco de dados (se você quiser gerenciá-lo por aqui também)
+  - type: psql
+    name: bacelar-postgres
+    plan: free
+    # ... você pode adicionar outras configurações aqui
+
+  # Configuração para o Redis
+  - type: redis
+    name: bacelar-redis
+    plan: free

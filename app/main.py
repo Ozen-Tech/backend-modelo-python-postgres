@@ -11,6 +11,8 @@ app = FastAPI(title="API Bacelar Advocacia", version="1.0.0")
 # e permite subdomínios (importante para os deploys da Vercel)
 ALLOWED_ORIGIN_REGEX = r"https?:\/\/.*\.vercel\.app"
 
+origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"], # Para desenvolvimento
